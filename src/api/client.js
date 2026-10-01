@@ -131,6 +131,8 @@ export const imageAPI = {
   getImages: () => apiClient.get('/api/images'),
   getIcons: () => apiClient.get('/api/icons'),
   deleteImage: (id, force = false) => apiClient.delete(`/api/image/${id}?force=${force}`),
+  // 获取镜像源仓库的更新说明（传容器 id 或镜像 id 均可，后端会自动解析）
+  getChangelog: (id) => apiClient.get(`/api/image/${id}/changelog`),
   uploadIcon: (file, imageName, containerName) => {
     const formData = new FormData()
     formData.append('file', file)

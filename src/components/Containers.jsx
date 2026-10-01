@@ -9,12 +9,14 @@ import {
   Calendar,
   Package,
   X,
-  Info
+  Info,
+  FileText
 } from 'lucide-react'
 import { containerAPI, progressAPI, imageAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getImageLogo } from '../config/imageLogos.js'
+import ChangelogModal from './ChangelogModal.jsx'
 import icons8Img from '../assets/icons8.png'
 
 // 格式化运行时间为中文
@@ -68,6 +70,8 @@ function formatRunningTime(runningTime) {
 export function Containers() {
   const queryClient = useQueryClient()
   const [selectedContainer, setSelectedContainer] = useState(null)
+  // 更新说明弹窗对应的容器
+  const [changelogContainer, setChangelogContainer] = useState(null)
   // 添加批量操作相关的状态
   const [selectedContainers, setSelectedContainers] = useState([])
   const [isBatchMode, setIsBatchMode] = useState(false)
@@ -1162,6 +1166,17 @@ export function Containers() {
                                 <Upload className="h-4 w-4" />
                                 <span>更新</span>
                               </button>
+
+                              {container.haveUpdate && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setChangelogContainer(container) }}
+                                  className="flex-1 flex items-center justify-center gap-1 px-1 py-1.5 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border border-gray-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow active:scale-95 text-xs font-medium whitespace-nowrap"
+                                  title="查看本次更新了什么内容"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span>说明</span>
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
@@ -1191,6 +1206,16 @@ export function Containers() {
             onRename={handleRenameContainer}
             onUpdate={handleUpdateContainer}
             onAction={handleContainerAction}
+          />
+        )
+      }
+
+      {/* 更新说明弹窗 */}
+      {
+        changelogContainer && (
+          <ChangelogModal
+            container={changelogContainer}
+            onClose={() => setChangelogContainer(null)}
           />
         )
       }
