@@ -104,6 +104,13 @@ function ChangelogModal({ container, onClose }) {
 
   const releases = data?.releases || []
   const hasRepo = Boolean(data?.repo)
+  const isCommits = data?.kind === 'commits'
+
+  const introText = !hasRepo
+    ? ''
+    : isCommits
+      ? `该仓库（${data.repo}）未使用 Releases 发布更新说明，以下为最近的提交记录：`
+      : `以下为源仓库 ${data.repo} 最近的发布说明：`
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -162,7 +169,7 @@ function ChangelogModal({ container, onClose }) {
           ) : (
             <div className="space-y-4">
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                以下为源仓库 {data.repo} 最近的发布说明：
+                {introText}
               </p>
               {releases.map((release, index) => (
                 <div
