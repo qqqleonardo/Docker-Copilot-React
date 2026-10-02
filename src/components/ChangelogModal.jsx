@@ -11,8 +11,11 @@ import {
 import { imageAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
 
-// 轻量渲染 Release 说明中的常见 Markdown（标题/列表/加粗/代码），不引入额外依赖
+// 轻量渲染 Release 说明中的常见 Markdown（标题/列表/加粗/代码/分隔线），不引入额外依赖
 function renderMarkdownLine(line, key) {
+  if (/^\s*-{3,}\s*$/.test(line)) {
+    return <hr key={key} className="border-gray-200 dark:border-gray-700 my-2" />
+  }
   const heading = line.match(/^(#{1,6})\s+(.*)$/)
   if (heading) {
     return (
@@ -73,6 +76,10 @@ function ChangelogModal({ container, onClose }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [data, setData] = useState(null)
+  const [repoInput, setRepoInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -100,7 +107,27 @@ function ChangelogModal({ container, onClose }) {
     return () => {
       cancelled = true
     }
-  }, [container.id])
+  }, [container.id, reloadKey])
+
+  const saveRepo = async () => {
+    if (!repoInput.trim() || saving) return
+    setSaving(true)
+    setSaveMsg('')
+    try {
+      const response = await imageAPI.saveRepoMap(container.usingImage || container.name, repoInput.trim())
+      if (response.data.code === 200 || response.data.code === 0) {
+        setRepoInput('')
+        setSaveMsg('')
+        setReloadKey((k) => k + 1)
+      } else {
+        setSaveMsg(response.data.msg || '保存失败')
+      }
+    } catch (err) {
+      setSaveMsg(err.response?.data?.msg || err.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const releases = data?.releases || []
   const hasRepo = Boolean(data?.repo)
@@ -148,16 +175,15 @@ function ChangelogModal({ container, onClose }) {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <AlertCircle className="h-8 w-8 text-red-500 mb-3" />
               <p className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap">{error}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">也可以在下方手动指定仓库后重试</p>
             </div>
           ) : !hasRepo ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Info className="h-8 w-8 text-gray-400 mb-3" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                该镜像未提供 GitHub 源仓库信息，无法获取更新说明。
+                无法自动确定该镜像的 GitHub 源仓库。
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                可以到镜像仓库页面查看该镜像的说明文档。
-              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">可以在下方手动指定仓库地址</p>
             </div>
           ) : releases.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -221,6 +247,36 @@ function ChangelogModal({ container, onClose }) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {!loading && (
+            <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+              <div className="flex items-center gap-2">
+                <input
+                  value={repoInput}
+                  onChange={(e) => setRepoInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveRepo() }}
+                  placeholder={hasRepo ? `更换仓库（当前: ${data.repo}）` : '手动指定 GitHub 仓库，如 owner/repo'}
+                  className="flex-1 min-w-0 text-xs px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-400"
+                />
+                <button
+                  onClick={saveRepo}
+                  disabled={saving || !repoInput.trim()}
+                  className={cn(
+                    "px-3 py-2 text-xs font-medium rounded-lg border transition-all whitespace-nowrap",
+                    repoInput.trim()
+                      ? "text-primary-600 dark:text-primary-400 border-primary-300 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                      : "text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                  )}
+                >
+                  {saving ? '保存中...' : '保存并刷新'}
+                </button>
+              </div>
+              {saveMsg && <p className="text-xs text-red-500 mt-1">{saveMsg}</p>}
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                自动识别不到或识别错误时，填写镜像实际对应的 GitHub 仓库（owner/repo 或完整链接），保存后立即生效并持久保存
+              </p>
             </div>
           )}
         </div>

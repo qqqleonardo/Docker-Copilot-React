@@ -133,6 +133,8 @@ export const imageAPI = {
   deleteImage: (id, force = false) => apiClient.delete(`/api/image/${id}?force=${force}`),
   // 获取镜像源仓库的更新说明（传容器 id 或镜像 id 均可，后端会自动解析）
   getChangelog: (id) => apiClient.get(`/api/image/${id}/changelog`),
+  // 手动指定镜像对应的 GitHub 仓库（自动识别不到或识别错误时使用）
+  saveRepoMap: (imageName, repo) => apiClient.post('/api/image/repoMap', { imageName, repo }),
   uploadIcon: (file, imageName, containerName) => {
     const formData = new FormData()
     formData.append('file', file)
