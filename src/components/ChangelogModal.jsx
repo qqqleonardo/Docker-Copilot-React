@@ -80,6 +80,7 @@ function ChangelogModal({ container, onClose }) {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [showOriginal, setShowOriginal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -132,6 +133,7 @@ function ChangelogModal({ container, onClose }) {
   const releases = data?.releases || []
   const hasRepo = Boolean(data?.repo)
   const isCommits = data?.kind === 'commits'
+  const hasZh = releases.some((r) => r.bodyZh)
 
   const introText = !hasRepo
     ? ''
@@ -144,24 +146,35 @@ function ChangelogModal({ container, onClose }) {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[85vh] flex flex-col">
         {/* 弹窗头部 */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                更新说明
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {container.name}
-                {data?.currentVersion && ` · 当前版本: ${data.currentVersion}`}
-              </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  更新说明
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {container.name}
+                  {data?.currentVersion && ` · 当前版本: ${data.currentVersion}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasZh && (
+                  <button
+                    onClick={() => setShowOriginal((v) => !v)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors whitespace-nowrap"
+                    title={showOriginal ? '查看 AI 中文翻译' : '查看原文'}
+                  >
+                    {showOriginal ? '中文' : '原文'}
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
         </div>
 
         {/* 弹窗内容 */}
@@ -215,11 +228,18 @@ function ChangelogModal({ container, onClose }) {
                           {release.name || release.tagName}
                         </span>
                       </div>
-                      {release.publishedAt && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-                          {release.publishedAt.split('T')[0]}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {!showOriginal && release.bodyZh && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
+                            AI 中文
+                          </span>
+                        )}
+                        {release.publishedAt && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {release.publishedAt.split('T')[0]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {release.name && release.tagName && (
                       <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 inline-block">
@@ -227,11 +247,14 @@ function ChangelogModal({ container, onClose }) {
                       </span>
                     )}
                   </div>
-                  {release.body && (
-                    <div className="px-4 py-3 text-xs leading-relaxed space-y-1 max-h-56 overflow-y-auto">
-                      {release.body.split(/\r?\n/).map((line, i) => renderMarkdownLine(line, i))}
-                    </div>
-                  )}
+                  {(() => {
+                    const text = !showOriginal && release.bodyZh ? release.bodyZh : release.body
+                    return text ? (
+                      <div className="px-4 py-3 text-xs leading-relaxed space-y-1 max-h-56 overflow-y-auto">
+                        {text.split(/\r?\n/).map((line, i) => renderMarkdownLine(line, i))}
+                      </div>
+                    ) : null
+                  })()}
                   {release.url && (
                     <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700/50">
                       <a

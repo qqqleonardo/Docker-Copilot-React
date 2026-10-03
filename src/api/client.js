@@ -132,7 +132,8 @@ export const imageAPI = {
   getIcons: () => apiClient.get('/api/icons'),
   deleteImage: (id, force = false) => apiClient.delete(`/api/image/${id}?force=${force}`),
   // 获取镜像源仓库的更新说明（传容器 id 或镜像 id 均可，后端会自动解析）
-  getChangelog: (id) => apiClient.get(`/api/image/${id}/changelog`),
+  // AI 翻译开启时后端要等大模型返回，超时放宽到 60s
+  getChangelog: (id) => apiClient.get(`/api/image/${id}/changelog`, { timeout: 60000 }),
   // 手动指定镜像对应的 GitHub 仓库（自动识别不到或识别错误时使用）
   saveRepoMap: (imageName, repo) => apiClient.post('/api/image/repoMap', { imageName, repo }),
   uploadIcon: (file, imageName, containerName) => {
